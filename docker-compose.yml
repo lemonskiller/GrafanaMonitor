@@ -54,9 +54,11 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      OLLAMA_UPSTREAM_URL: ${OLLAMA_UPSTREAM_URL:-http://127.0.0.1:11434}
-      OLLAMA_MONITOR_HOST: ${OLLAMA_MONITOR_HOST:-172.17.0.1}
-      OLLAMA_MONITOR_PORT: ${OLLAMA_MONITOR_PORT:-11435}
+      OLLAMA_UPSTREAM_URL: ${OLLAMA_UPSTREAM_URL:-http://127.0.0.1:11433}
+      OLLAMA_MONITOR_HOST: ${OLLAMA_MONITOR_HOST:-127.0.0.1}
+      OLLAMA_MONITOR_PORT: ${OLLAMA_MONITOR_PORT:-11434}
+      OLLAMA_METRICS_HOST: ${OLLAMA_METRICS_HOST:-172.17.0.1}
+      OLLAMA_METRICS_PORT: ${OLLAMA_METRICS_PORT:-11435}
       OLLAMA_MODELS_CONFIG: /config/models.json
     volumes:
       - ./ollama-monitor/models.json:/config/models.json:ro

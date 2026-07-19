@@ -138,6 +138,7 @@ test('integrates Ollama monitoring and model-specific email alerts', async () =>
   assert.match(compose, /ollama-monitor:/);
   assert.match(compose, /OLLAMA_UPSTREAM_URL/);
   assert.match(compose, /network_mode: host/);
+  assert.match(compose, /OLLAMA_METRICS_HOST/);
   assert.match(prometheus, /job_name: ollama/);
   assert.match(prometheus, /host\.docker\.internal:11435/);
   for (const alert of ['OllamaDown', 'OllamaModelUnavailable', 'OllamaModelErrors']) {

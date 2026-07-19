@@ -159,9 +159,9 @@ export class MetricsRegistry {
   }
 }
 
-export const createOllamaMonitor = ({ upstreamUrl, models = [], defaultGroup = 'ollama-default' }) => {
+export const createOllamaMonitor = ({ upstreamUrl, models = [], defaultGroup = 'ollama-default', registry = null }) => {
   const upstream = new URL(upstreamUrl);
-  const metrics = new MetricsRegistry(models, defaultGroup);
+  const metrics = registry ?? new MetricsRegistry(models, defaultGroup);
 
   return createServer(async (clientRequest, clientResponse) => {
     const requestUrl = new URL(clientRequest.url ?? '/', 'http://ollama-monitor');
@@ -273,12 +273,20 @@ export const createOllamaMonitor = ({ upstreamUrl, models = [], defaultGroup = '
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const configPath = process.env.OLLAMA_MODELS_CONFIG ?? '/config/models.json';
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  const upstreamUrl = process.env.OLLAMA_UPSTREAM_URL ?? 'http://host.docker.internal:11434';
+  const registry = new MetricsRegistry(config.models ?? [], config.default_alert_email_group ?? 'ollama-default');
   const server = createOllamaMonitor({
-    upstreamUrl: process.env.OLLAMA_UPSTREAM_URL ?? 'http://host.docker.internal:11434',
-    models: config.models ?? [],
-    defaultGroup: config.default_alert_email_group ?? 'ollama-default',
+    upstreamUrl,
+    registry,
   });
   const host = process.env.OLLAMA_MONITOR_HOST ?? '0.0.0.0';
   const port = Number(process.env.OLLAMA_MONITOR_PORT ?? 11435);
   server.listen(port, host, () => process.stdout.write(`Ollama monitor listening on ${host}:${port}\n`));
+
+  const metricsHost = process.env.OLLAMA_METRICS_HOST;
+  const metricsPort = Number(process.env.OLLAMA_METRICS_PORT ?? 0);
+  if (metricsHost && metricsPort && (metricsHost !== host || metricsPort !== port)) {
+    const metricsServer = createOllamaMonitor({ upstreamUrl, registry });
+    metricsServer.listen(metricsPort, metricsHost, () => process.stdout.write(`Ollama metrics listening on ${metricsHost}:${metricsPort}\n`));
+  }
 }
