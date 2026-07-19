@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -7,151 +9,701 @@
   "links": [],
   "panels": [
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "reqps" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "sum(rate(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m]))", "legendFormat": "请求/秒", "refId": "A" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "(sum(rate(http_server_requests_seconds_count{application=\"nextoffer\"}[5m]))) or on() vector(0)",
+          "legendFormat": "请求/秒",
+          "refId": "A"
+        }
+      ],
       "title": "请求速率",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 1 }] }, "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "id": 2,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m])))", "legendFormat": "P95", "refId": "A" }],
-      "title": "P95 响应耗时",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "(max(max_over_time(http_server_requests_seconds_max{application=\"nextoffer\"}[15m]))) or on() vector(0)",
+          "legendFormat": "最大耗时",
+          "refId": "A"
+        }
+      ],
+      "title": "近15分钟最大响应耗时",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "max": 100, "min": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }, "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "id": 3,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "100 * sum(rate(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m])), 0.001)", "legendFormat": "5xx", "refId": "A" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "(100 * sum(rate(http_server_requests_seconds_count{application=\"nextoffer\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=\"nextoffer\"}[5m])), 0.001)) or on() vector(0)",
+          "legendFormat": "5xx",
+          "refId": "A"
+        }
+      ],
       "title": "5xx 错误率",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }, "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "id": 4,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "sum(up{job=\"nextoffer\"})", "legendFormat": "在线实例", "refId": "A" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "sum(up{job=\"nextoffer\"})",
+          "legendFormat": "在线实例",
+          "refId": "A"
+        }
+      ],
       "title": "在线实例",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 12, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "unit": "reqps" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
       "id": 5,
-      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" } },
-      "targets": [{ "expr": "sum by (instance) (rate(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m]))", "legendFormat": "{{instance}}", "refId": "A" }],
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(http_server_requests_seconds_count{application=\"nextoffer\"}[5m]))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
       "title": "各实例请求速率",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 8, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
       "id": 6,
-      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" } },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, instance) (rate(http_server_requests_seconds_bucket{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m])))", "legendFormat": "{{instance}} P95", "refId": "A" }],
-      "title": "各实例 P95 耗时",
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "max by (instance) (max_over_time(http_server_requests_seconds_max{application=\"nextoffer\"}[15m]))",
+          "legendFormat": "{{instance}} 最大耗时",
+          "refId": "A"
+        }
+      ],
+      "title": "各实例近15分钟最大耗时",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "max": 100, "min": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] }, "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 13 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 13
+      },
       "id": 7,
-      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdLabels": false, "showThresholdMarkers": true, "sizing": "auto" },
-      "targets": [{ "expr": "100 * sum(jvm_memory_used_bytes{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\",area=\"heap\"}) / clamp_min(sum(jvm_memory_max_bytes{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\",area=\"heap\"}), 1)", "legendFormat": "堆内存", "refId": "A" }],
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * sum(jvm_memory_used_bytes{application=\"nextoffer\",area=\"heap\"}) / clamp_min(sum(jvm_memory_max_bytes{application=\"nextoffer\",area=\"heap\"}), 1)",
+          "legendFormat": "堆内存",
+          "refId": "A"
+        }
+      ],
       "title": "JVM 堆内存使用率",
       "type": "gauge"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "unit": "percentunit" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 13 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 13
+      },
       "id": 8,
-      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" } },
-      "targets": [{ "expr": "process_cpu_usage{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}", "legendFormat": "{{instance}}", "refId": "A" }],
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_cpu_usage{application=\"nextoffer\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
       "title": "进程 CPU 使用率",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 13 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 13
+      },
       "id": 9,
-      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" } },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
-        { "expr": "hikaricp_connections_active{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}", "legendFormat": "{{instance}} 活跃", "refId": "A" },
-        { "expr": "hikaricp_connections{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}", "legendFormat": "{{instance}} 总数", "refId": "B" }
+        {
+          "expr": "hikaricp_connections_active{application=\"nextoffer\"}",
+          "legendFormat": "{{instance}} 活跃",
+          "refId": "A"
+        },
+        {
+          "expr": "hikaricp_connections{application=\"nextoffer\"}",
+          "legendFormat": "{{instance}} 总数",
+          "refId": "B"
+        }
       ],
       "title": "数据库连接池",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "unit": "reqps" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-nextoffer"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
       "id": 10,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "Value" }] },
-      "targets": [{ "expr": "topk(15, sum by (uri) (rate(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\",instance=~\"$instance\"}[5m])))", "format": "table", "instant": true, "legendFormat": "{{uri}}", "refId": "A" }],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (uri) (rate(http_server_requests_seconds_count{application=\"nextoffer\"}[5m])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
       "title": "最繁忙接口",
       "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 41,
-  "tags": ["nextoffer", "spring-boot"],
+  "tags": [
+    "nextoffer",
+    "spring-boot"
+  ],
   "templating": {
-    "list": [
-      {
-        "allValue": ".*",
-        "current": { "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-        "definition": "label_values(http_server_requests_seconds_count{application=\"nextoffer\"}, environment)",
-        "includeAll": true,
-        "label": "环境",
-        "multi": true,
-        "name": "environment",
-        "options": [],
-        "query": { "query": "label_values(http_server_requests_seconds_count{application=\"nextoffer\"}, environment)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "refresh": 1,
-        "regex": "",
-        "type": "query"
-      },
-      {
-        "allValue": ".*",
-        "current": { "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "prometheus-nextoffer" },
-        "definition": "label_values(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\"}, instance)",
-        "includeAll": true,
-        "label": "实例",
-        "multi": true,
-        "name": "instance",
-        "options": [],
-        "query": { "query": "label_values(http_server_requests_seconds_count{application=\"nextoffer\",environment=~\"$environment\"}, instance)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "refresh": 1,
-        "regex": "",
-        "type": "query"
-      }
-    ]
+    "list": []
   },
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "NextOffer 服务监控",
   "uid": "nextoffer-service-overview",
-  "version": 1,
+  "version": 4,
   "weekStart": ""
 }

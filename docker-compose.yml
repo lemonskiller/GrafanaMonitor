@@ -1,6 +1,6 @@
 services:
   prometheus:
-    image: prom/prometheus:v3.12.0
+    image: docker.m.daocloud.io/prom/prometheus:v3.12.0
     restart: unless-stopped
     ports:
       - "${PROMETHEUS_BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}:9090"
@@ -13,9 +13,12 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/targets:/etc/prometheus/targets:ro
       - prometheus_data:/prometheus
+    networks:
+      - default
+      - nextoffer
 
   grafana:
-    image: grafana/grafana:13.1.0
+    image: docker.m.daocloud.io/grafana/grafana:13.1.0
     restart: unless-stopped
     ports:
       - "${GRAFANA_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3001}:3000"
@@ -26,6 +29,8 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3001}
+      GF_SERVER_SERVE_FROM_SUB_PATH: ${GRAFANA_SERVE_FROM_SUB_PATH:-false}
+      GF_SECURITY_CSRF_TRUSTED_ORIGINS: ${GRAFANA_CSRF_TRUSTED_ORIGINS:-}
     secrets:
       - grafana_admin_password
     volumes:
@@ -38,6 +43,11 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+
+networks:
+  nextoffer:
+    external: true
+    name: nextoffer_default
 
 secrets:
   grafana_admin_password:

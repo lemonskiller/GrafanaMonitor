@@ -1,8 +1,7 @@
 [
   {
     "targets": [
-      "10.0.0.11:9091",
-      "10.0.0.12:9091"
+      "backend:9091"
     ],
     "labels": {
       "service": "nextoffer"
