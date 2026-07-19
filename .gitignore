@@ -3,3 +3,5 @@
 secrets/*
 !secrets/README.md
 runtime/
+.nfs*
+**/.nfs*

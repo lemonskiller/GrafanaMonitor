@@ -2,7 +2,7 @@ groups:
   - name: ollama
     rules:
       - alert: OllamaDown
-        expr: ollama_up{job="ollama"} == 0 or up{job="ollama"} == 0
+        expr: max(ollama_up{job="ollama"}) == 0 or max(up{job="ollama"}) == 0
         for: 2m
         labels:
           severity: critical

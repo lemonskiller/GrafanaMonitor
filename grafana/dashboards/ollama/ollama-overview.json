@@ -36,7 +36,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "min(ollama_up{job=\"ollama\"})", "legendFormat": "状态", "refId": "A"}],
+      "targets": [{"expr": "max(ollama_up{job=\"ollama\"})", "legendFormat": "状态", "refId": "A"}],
       "fieldConfig": {"defaults": {"mappings": [{"options": {"0": {"color": "red", "text": "异常"}, "1": {"color": "green", "text": "正常"}}, "type": "value"}], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}, "overrides": []},
       "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "textMode": "auto"}
     },
