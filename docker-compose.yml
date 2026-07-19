@@ -20,6 +20,7 @@ services:
     depends_on:
       - alertmanager
       - blackbox-exporter
+      - ollama-monitor
 
   alertmanager:
     image: docker.m.daocloud.io/prom/alertmanager:v0.32.1
@@ -44,6 +45,20 @@ services:
       - --config.file=/etc/blackbox_exporter/blackbox.yml
     volumes:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+
+  ollama-monitor:
+    build:
+      context: ./ollama-monitor
+    restart: unless-stopped
+    environment:
+      OLLAMA_UPSTREAM_URL: ${OLLAMA_UPSTREAM_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODELS_CONFIG: /config/models.json
+    ports:
+      - "${OLLAMA_MONITOR_BIND_ADDRESS:-127.0.0.1}:${OLLAMA_MONITOR_PORT:-11435}:11435"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./ollama-monitor/models.json:/config/models.json:ro
 
   node-exporter:
     image: docker.m.daocloud.io/prom/node-exporter:v1.11.1
@@ -99,6 +114,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - ollama-monitor
 
 volumes:
   prometheus_data:

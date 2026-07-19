@@ -90,6 +90,13 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
+  - job_name: ollama
+    static_configs:
+      - targets: [ollama-monitor:11435]
+        labels:
+          service: ollama
+          environment: production
+
   - job_name: prometheus
     static_configs:
       - targets: [localhost:9090]

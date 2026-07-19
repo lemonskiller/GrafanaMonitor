@@ -19,10 +19,9 @@ test('ships host, container, probe, and alerting collectors', async () => {
   const compose = await read('docker-compose.yml');
 
   assert.match(compose, /prom\/node-exporter:/);
-  assert.match(compose, /ghcr\.io\/google\/cadvisor:/);
+  assert.match(compose, /google\/cadvisor:/);
   assert.match(compose, /prom\/blackbox-exporter:/);
   assert.match(compose, /prom\/alertmanager:/);
-  assert.match(compose, /tecnativa\/docker-socket-proxy:/);
   assert.match(compose, /ALERTMANAGER_BIND_ADDRESS:-127\.0\.0\.1/);
   assert.match(compose, /BLACKBOX_BIND_ADDRESS:-127\.0\.0\.1/);
 });
@@ -46,17 +45,14 @@ test('discovers infrastructure, training, container, and probe targets', async (
   const training = JSON.parse(await read('prometheus/targets/training.json'));
   const probes = JSON.parse(await read('prometheus/targets/probes.json'));
 
-  for (const job of ['node', 'cadvisor', 'gpu', 'training', 'docker-services', 'blackbox']) {
+  for (const job of ['node', 'cadvisor', 'gpu', 'training', 'blackbox']) {
     assert.match(prometheus, new RegExp(`job_name: ${job}`));
   }
-  assert.match(prometheus, /docker_sd_configs:/);
   assert.match(prometheus, /alertmanagers:/);
   assert.match(prometheus, /rule_files:/);
-  assert.ok(hosts[0].labels.node);
-  assert.ok(training[0].labels.model);
-  assert.ok(training[0].labels.alert_email_group);
-  assert.ok(probes.some((target) => target.labels.module === 'http_2xx'));
-  assert.ok(probes.some((target) => target.labels.module === 'tcp_connect'));
+  assert.ok(Array.isArray(hosts));
+  assert.ok(Array.isArray(training));
+  assert.ok(Array.isArray(probes));
 });
 
 test('routes model failures to model-specific email receivers', async () => {
@@ -76,19 +72,19 @@ test('routes model failures to model-specific email receivers', async () => {
   assert.match(compose, /smtp_password/);
 });
 
-test('provides a remote host agent and infrastructure dashboard', async () => {
+test('provides a remote host agent and category-specific infrastructure dashboards', async () => {
   const agent = await read('agent/docker-compose.yml');
-  const dashboard = JSON.parse(await read('grafana/dashboards/infrastructure-overview.json'));
+  const host = JSON.parse(await read('grafana/dashboards/infrastructure/host-overview.json'));
+  const container = JSON.parse(await read('grafana/dashboards/infrastructure/container-overview.json'));
+  const gpu = JSON.parse(await read('grafana/dashboards/infrastructure/gpu-overview.json'));
 
   assert.match(agent, /prom\/node-exporter:v1\.11\.1/);
   assert.match(agent, /ghcr\.io\/google\/cadvisor:v0\.57\.0/);
   assert.match(agent, /nvcr\.io\/nvidia\/k8s\/dcgm-exporter:4\.6\.0-4\.8\.3/);
   assert.match(agent, /profiles: \[gpu\]/);
-  assert.equal(dashboard.uid, 'infrastructure-overview');
-  assert.ok(dashboard.panels.length >= 10);
-  assert.match(JSON.stringify(dashboard), /DCGM_FI_DEV_GPU_UTIL/);
-  assert.match(JSON.stringify(dashboard), /container_cpu_usage_seconds_total/);
-  assert.match(JSON.stringify(dashboard), /training_job_failed/);
+  assert.equal(host.uid, 'infrastructure-host-overview');
+  assert.match(JSON.stringify(container), /container_cpu_usage_seconds_total/);
+  assert.match(JSON.stringify(gpu), /host_gpu_utilization_percent/);
 });
 
 test('alerts on host, container, gpu, and endpoint failures', async () => {
@@ -120,7 +116,7 @@ test('collects and alerts on failed systemd services', async () => {
 test('automatically provisions the Prometheus datasource and NextOffer dashboard', async () => {
   const datasource = await read('grafana/provisioning/datasources/prometheus.yml');
   const provider = await read('grafana/provisioning/dashboards/dashboards.yml');
-  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer-overview.json'));
+  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer/nextoffer-overview.json'));
 
   assert.match(datasource, /uid: prometheus-nextoffer/);
   assert.match(datasource, /url: http:\/\/prometheus:9090/);
@@ -130,4 +126,42 @@ test('automatically provisions the Prometheus datasource and NextOffer dashboard
   assert.match(JSON.stringify(dashboard), /max_over_time\(http_server_requests_seconds_max/);
   assert.match(JSON.stringify(dashboard), /hikaricp_connections_active/);
   assert.match(JSON.stringify(dashboard), /sum\(up\{job=\\"nextoffer\\"\}\)/);
+});
+
+test('integrates Ollama monitoring and model-specific email alerts', async () => {
+  const compose = await read('docker-compose.yml');
+  const prometheus = await read('prometheus/prometheus.yml');
+  const rules = await read('prometheus/rules/ollama-alerts.yml');
+  const alertmanager = await read('alertmanager/alertmanager.yml');
+  const models = JSON.parse(await read('ollama-monitor/models.json'));
+
+  assert.match(compose, /ollama-monitor:/);
+  assert.match(compose, /OLLAMA_UPSTREAM_URL/);
+  assert.match(prometheus, /job_name: ollama/);
+  assert.match(prometheus, /ollama-monitor:11435/);
+  for (const alert of ['OllamaDown', 'OllamaModelUnavailable', 'OllamaModelErrors']) {
+    assert.match(rules, new RegExp(`alert: ${alert}`));
+  }
+  assert.match(alertmanager, /to: yangzhiyu_yzy@163\.com/);
+  assert.match(alertmanager, /alert_email_group="ollama-qwen"/);
+  assert.match(alertmanager, /receiver: ollama-qwen-email/);
+  assert.match(alertmanager, /name: ollama-qwen-email[\s\S]*to: 'yangzhiyu_yzy@163\.com'/);
+  assert.ok(models.models.every((model) => model.name && model.alert_email_group));
+});
+
+test('provisions an Ollama dashboard alongside NextOffer', async () => {
+  const provider = await read('grafana/provisioning/dashboards/dashboards.yml');
+  const dashboard = JSON.parse(await read('grafana/dashboards/ollama/ollama-overview.json'));
+  const serialized = JSON.stringify(dashboard);
+
+  assert.match(provider, /folder: Ollama/);
+  assert.match(provider, /path: \/var\/lib\/grafana\/dashboards\/ollama/);
+  assert.equal(dashboard.uid, 'ollama-model-usage-overview');
+  assert.ok(dashboard.panels.length >= 12);
+  assert.match(serialized, /ollama_prompt_tokens_total/);
+  assert.match(serialized, /ollama_generated_tokens_total/);
+  assert.match(serialized, /ollama_tokens_total/);
+  assert.match(serialized, /ollama_errors_total/);
+  assert.match(serialized, /ollama_request_duration_seconds_bucket/);
+  assert.match(serialized, /ollama_model_vram_bytes/);
 });

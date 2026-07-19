@@ -20,3 +20,13 @@ providers:
     allowUiUpdates: true
     options:
       path: /var/lib/grafana/dashboards/infrastructure
+
+  - name: Ollama
+    orgId: 1
+    folder: Ollama
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/ollama

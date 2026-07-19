@@ -10,10 +10,11 @@
 | --- | --- | --- |
 | Linux 主机 | node-exporter | CPU、内存、磁盘、网络、systemd 服务、进程数量 |
 | Docker | cAdvisor | 所有容器的 CPU、内存、网络和存活状态 |
-| 容器业务指标 | Docker 服务发现 | 带 `prometheus.io/*` 标签的容器 `/metrics` |
+| 容器业务指标 | Prometheus file SD | 在 `services.json` 登记的容器 `/metrics` |
 | NVIDIA GPU | node-exporter textfile collector 或 DCGM Exporter | GPU/显存利用率、温度、功耗、XID 错误 |
 | 目录大小 | 主机自定义采集器 + node-exporter textfile collector | 指定根目录下最大的一级目录、目录大小趋势、扫描延迟 |
 | 模型训练 | Prometheus Client | loss、运行状态、失败状态、最后进度时间 |
+| Ollama 模型 | 透明监控代理 | 每模型请求、错误、耗时、输入/输出/总 token、模型与 VRAM 状态 |
 | HTTP/TCP 服务 | Blackbox Exporter | 可用性、延迟、TLS 与 TCP 连接 |
 | 告警通知 | Alertmanager | 运维默认邮箱、按模型或团队分组邮箱 |
 
@@ -24,6 +25,7 @@ Grafana 会自动创建以下仪表盘：
 - `Infrastructure / 容器资源监控`
 - `Infrastructure / GPU 监控`
 - `Infrastructure / 目录大小监控`
+- `Ollama / Ollama 模型使用监控`
 
 ## 前置条件
 
@@ -89,19 +91,7 @@ AGENT_BIND_ADDRESS=10.0.0.11 docker compose --profile gpu up -d
 ]
 ```
 
-中心节点上的 Docker 容器还可以用标签自动发现业务指标：
-
-```yaml
-services:
-  inference-api:
-    labels:
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "9000"
-      prometheus.io/path: "/metrics"
-      prometheus.io/scheme: "http"
-```
-
-cAdvisor 会无条件采集所有容器的资源指标；上述标签只用于采集容器自己的业务指标。Prometheus 通过只读权限的 Docker socket proxy 发现容器，不直接挂载 Docker socket。
+cAdvisor 会无条件采集所有容器的资源指标。容器自身的业务指标继续在 `prometheus/targets/services.json` 中登记，避免把 Docker socket 交给监控服务。
 
 ### HTTP/TCP 可用性
 
@@ -176,9 +166,51 @@ finally:
 
 任务正常结束并关闭指标端点后，应从该文件删除目标，否则 `TrainingTargetDown` 会按故障处理。也可以让常驻 sidecar 继续暴露最终状态。
 
-## 4. 配置分模型告警邮箱
+## 4. 接入 Ollama 模型使用监控
 
-编辑 `alertmanager/alertmanager.yml` 的 SMTP 配置，将 `example.com` 地址替换为真实值。仓库已提供 `recommendation-team` 和 `vision-team` 两个示例路由：
+监控代理默认连接中心节点宿主机的 `http://host.docker.internal:11434`。如果 Ollama 位于其他机器，通过环境变量指定：
+
+```bash
+OLLAMA_UPSTREAM_URL=http://10.0.0.11:11434 docker compose up -d --build ollama-monitor prometheus grafana alertmanager
+```
+
+编辑 `ollama-monitor/models.json`，登记需要持续监控的模型及其邮件组：
+
+```json
+{
+  "default_alert_email_group": "ollama-default",
+  "models": [
+    {"name": "qwen3:8b", "alert_email_group": "ollama-qwen"},
+    {"name": "deepseek-r1:8b", "alert_email_group": "ollama-deepseek"}
+  ]
+}
+```
+
+模型名必须与 Ollama `/api/tags` 返回的 `name` 完全一致。配置中的模型不存在超过 5 分钟、Ollama 上游失联、模型调用报错或错误率持续超过 5% 时会触发告警。
+
+应用需要把原 Ollama Base URL 从 `http://ollama-host:11434` 改为监控代理地址：
+
+```text
+http://monitor-host:11435
+```
+
+代理原样转发 Ollama API，兼容 `/api/chat`、`/api/generate`、`/api/embed` 以及流式 NDJSON。只有经过代理的调用才能统计真实使用量和报错；绕过代理的调用不会计入请求与 token 指标。
+
+每次成功响应从 Ollama 官方用量字段中提取：
+
+| 页面数据 | Prometheus 指标 | Ollama 字段 |
+| --- | --- | --- |
+| 输入 token | `ollama_prompt_tokens_total` | `prompt_eval_count` |
+| 输出 token | `ollama_generated_tokens_total` | `eval_count` |
+| 总 token | `ollama_tokens_total` | 输入加输出 |
+
+`Ollama / Ollama 模型使用监控` 页面按模型展示累计输入、累计输出、累计总 token，以及三类 token 的时间速率。
+
+## 5. 配置分模型告警邮箱
+
+Alertmanager 已使用 `yangzhiyu_yzy@163.com` 作为默认发件人与默认收件人。`secrets/smtp-password` 必须填写该 163 邮箱开启 SMTP 后生成的客户端授权码，不要填写网页登录密码。
+
+仓库提供了 `ollama-qwen`、`ollama-deepseek`、`recommendation-team` 和 `vision-team` 示例路由：
 
 ```yaml
 route:
@@ -186,15 +218,21 @@ route:
   routes:
     - matchers: ['alert_email_group="recommendation-team"']
       receiver: recommendation-team-email
+    - matchers: ['alert_email_group="ollama-qwen"']
+      receiver: ollama-qwen-email
 
 receivers:
   - name: recommendation-team-email
     email_configs:
       - to: recommendation-owner@example.com
         send_resolved: true
+  - name: ollama-qwen-email
+    email_configs:
+      - to: 'yangzhiyu_yzy@163.com,ollama-owner@example.com'
+        send_resolved: true
 ```
 
-每个模型可以使用独立的 `alert_email_group`；添加新组时同时增加一条 route 和同名 receiver。多个模型共用邮箱时，使用同一个组即可。未匹配任何组的告警发送到 `operations-email`。
+每个模型可以使用独立的 `alert_email_group`；添加新组时同时增加一条 route 和同名 receiver。单个模型需要多个邮箱时，在 `to` 中用英文逗号分隔地址。多个模型共用邮箱时，使用同一个组即可。未匹配任何组的告警发送到 `yangzhiyu_yzy@163.com`。
 
 SMTP 密码使用 Docker secret，不写入 Git：
 
@@ -202,12 +240,12 @@ SMTP 密码使用 Docker secret，不写入 Git：
 mkdir -p secrets
 umask 077
 printf '%s' 'Grafana 管理员强密码' > secrets/grafana-admin-password
-printf '%s' 'SMTP 密码或应用专用密码' > secrets/smtp-password
+printf '%s' '163 邮箱 SMTP 客户端授权码' > secrets/smtp-password
 ```
 
 训练告警包括：指标端点失联 2 分钟、训练显式失败、运行任务超过 15 分钟没有进度。邮件会包含模型名、run ID、实例和告警状态。通用规则还覆盖节点失联、内存高、磁盘将满、systemd 服务失败、容器监控失联、GPU XID 错误和 HTTP/TCP 探测失败。
 
-## 5. 启动中心栈
+## 6. 启动中心栈
 
 ```bash
 docker compose up -d
@@ -219,6 +257,7 @@ docker compose up -d
 - Prometheus: http://127.0.0.1:9090
 - Alertmanager: http://127.0.0.1:9093
 - Blackbox Exporter: http://127.0.0.1:9115
+- Ollama 监控代理: http://127.0.0.1:11435
 
 Grafana 默认用户名为 `admin`，密码来自 `secrets/grafana-admin-password`。远程访问推荐使用 SSH 隧道：
 
@@ -228,7 +267,7 @@ ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 -L 9093:127.0.0.1:9093 user@mo
 
 如果必须对团队开放 Grafana，请通过带 HTTPS 和身份认证的反向代理发布，并保持 Prometheus、Alertmanager 和 exporter 端口不对公网开放。
 
-## 6. 启用本机 GPU 和目录大小采集
+## 7. 启用本机 GPU 和目录大小采集
 
 中心节点如果也需要监控本机 GPU 与目录大小，启用主机采集器：
 
@@ -245,10 +284,10 @@ docker compose up -d node-exporter prometheus grafana
 
 ```bash
 docker compose ps
-docker compose logs --tail=200 prometheus alertmanager grafana blackbox-exporter
+docker compose logs --tail=200 prometheus alertmanager grafana blackbox-exporter ollama-monitor
 curl -X POST http://127.0.0.1:9090/-/reload
 curl -X POST http://127.0.0.1:9093/-/reload
-node --test tests/monitoring-stack.test.mjs
+node --test tests/*.test.mjs
 docker compose config --quiet
 ```
 

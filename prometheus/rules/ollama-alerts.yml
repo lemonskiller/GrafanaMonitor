@@ -1,0 +1,43 @@
+groups:
+  - name: ollama
+    rules:
+      - alert: OllamaDown
+        expr: ollama_up{job="ollama"} == 0 or up{job="ollama"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: ollama
+          alert_email_group: ollama-default
+        annotations:
+          summary: 'Ollama 服务不可用'
+          description: '监控代理连续 2 分钟无法访问 Ollama 上游。'
+
+      - alert: OllamaModelUnavailable
+        expr: ollama_model_available{job="ollama"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: ollama
+        annotations:
+          summary: 'Ollama 模型 {{ $labels.model }} 不可用'
+          description: '配置中的模型 {{ $labels.model }} 已连续 5 分钟不在 Ollama 模型列表中。'
+
+      - alert: OllamaModelErrors
+        expr: increase(ollama_errors_total{job="ollama"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: ollama
+        annotations:
+          summary: 'Ollama 模型 {{ $labels.model }} 调用报错'
+          description: '模型 {{ $labels.model }} 在最近 5 分钟出现调用错误，接口={{ $labels.endpoint }}。'
+
+      - alert: OllamaModelHighErrorRate
+        expr: sum by (model, alert_email_group) (rate(ollama_errors_total{job="ollama"}[10m])) / clamp_min(sum by (model, alert_email_group) (rate(ollama_requests_total{job="ollama"}[10m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: ollama
+        annotations:
+          summary: 'Ollama 模型 {{ $labels.model }} 错误率过高'
+          description: '模型 {{ $labels.model }} 最近 10 分钟错误率持续超过 5%。'

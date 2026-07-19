@@ -1,0 +1,13 @@
+{
+  "default_alert_email_group": "ollama-default",
+  "models": [
+    {
+      "name": "qwen3:8b",
+      "alert_email_group": "ollama-qwen"
+    },
+    {
+      "name": "deepseek-r1:8b",
+      "alert_email_group": "ollama-deepseek"
+    }
+  ]
+}
