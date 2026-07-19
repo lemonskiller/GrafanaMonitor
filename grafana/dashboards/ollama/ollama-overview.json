@@ -21,6 +21,20 @@
         "refresh": 1,
         "current": {"text": "All", "value": "$__all"},
         "options": []
+      },
+      {
+        "name": "client_service",
+        "label": "调用服务",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+        "query": {"query": "label_values(ollama_requests_total{job=\"ollama\",model!=\"unknown\",endpoint!=\"other\"}, client_service)", "refId": "PrometheusVariableQueryEditor-VariableQuery"},
+        "definition": "label_values(ollama_requests_total{job=\"ollama\",model!=\"unknown\",endpoint!=\"other\"}, client_service)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "options": []
       }
     ]
   },
@@ -66,7 +80,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "请求/秒", "refId": "A"}],
+      "targets": [{"expr": "sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "请求/秒", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
     },
@@ -76,7 +90,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "100 * sum(rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m])) / clamp_min(sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m])), 0.001)", "legendFormat": "错误率", "refId": "A"}],
+      "targets": [{"expr": "100 * sum(rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m])) / clamp_min(sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m])), 0.001)", "legendFormat": "错误率", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
       "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "textMode": "auto"}
     },
@@ -86,7 +100,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(ollama_request_duration_seconds_bucket{job=\"ollama\",model=~\"$model\"}[5m])))", "legendFormat": "P95", "refId": "A"}],
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(ollama_request_duration_seconds_bucket{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"}[5m])))", "legendFormat": "P95", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
     },
@@ -96,7 +110,7 @@
       "type": "bargauge",
       "gridPos": {"h": 7, "w": 8, "x": 0, "y": 4},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "sum by (model) (ollama_prompt_tokens_total{job=\"ollama\",model=~\"$model\"})", "legendFormat": "{{model}}", "refId": "A"}],
+      "targets": [{"expr": "sum by (model) (ollama_prompt_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"})", "legendFormat": "{{model}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
       "options": {"displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true, "sizing": "auto"}
     },
@@ -106,7 +120,7 @@
       "type": "bargauge",
       "gridPos": {"h": 7, "w": 8, "x": 8, "y": 4},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "sum by (model) (ollama_generated_tokens_total{job=\"ollama\",model=~\"$model\"})", "legendFormat": "{{model}}", "refId": "A"}],
+      "targets": [{"expr": "sum by (model) (ollama_generated_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"})", "legendFormat": "{{model}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
       "options": {"displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true, "sizing": "auto"}
     },
@@ -116,7 +130,7 @@
       "type": "bargauge",
       "gridPos": {"h": 7, "w": 8, "x": 16, "y": 4},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "sum by (model) (ollama_tokens_total{job=\"ollama\",model=~\"$model\"})", "legendFormat": "{{model}}", "refId": "A"}],
+      "targets": [{"expr": "sum by (model) (ollama_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"})", "legendFormat": "{{model}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
       "options": {"displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true, "sizing": "auto"}
     },
@@ -127,9 +141,9 @@
       "gridPos": {"h": 9, "w": 12, "x": 0, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
       "targets": [
-        {"expr": "sum by (model) (rate(ollama_prompt_tokens_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "{{model}} 输入", "refId": "A"},
-        {"expr": "sum by (model) (rate(ollama_generated_tokens_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "{{model}} 输出", "refId": "B"},
-        {"expr": "sum by (model) (rate(ollama_tokens_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "{{model}} 总量", "refId": "C"}
+        {"expr": "sum by (model) (rate(ollama_prompt_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"}[5m]))", "legendFormat": "{{model}} 输入", "refId": "A"},
+        {"expr": "sum by (model) (rate(ollama_generated_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"}[5m]))", "legendFormat": "{{model}} 输出", "refId": "B"},
+        {"expr": "sum by (model) (rate(ollama_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"}[5m]))", "legendFormat": "{{model}} 总量", "refId": "C"}
       ],
       "fieldConfig": {"defaults": {"unit": "ops", "min": 0}, "overrides": []},
       "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -141,8 +155,8 @@
       "gridPos": {"h": 9, "w": 12, "x": 12, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
       "targets": [
-        {"expr": "sum by (model) (rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 请求", "refId": "A"},
-        {"expr": "sum by (model) (rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 错误", "refId": "B"}
+        {"expr": "sum by (model) (rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 请求", "refId": "A"},
+        {"expr": "sum by (model) (rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 错误", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
       "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -153,7 +167,7 @@
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, model) (rate(ollama_request_duration_seconds_bucket{job=\"ollama\",model=~\"$model\"}[5m])))", "legendFormat": "{{model}}", "refId": "A"}],
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, model) (rate(ollama_request_duration_seconds_bucket{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"}[5m])))", "legendFormat": "{{model}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "s", "min": 0}, "overrides": []},
       "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
     },
@@ -182,6 +196,26 @@
       ],
       "fieldConfig": {"defaults": {}, "overrides": []},
       "options": {"cellHeight": "sm", "showHeader": true}
+    },
+    {
+      "id": 15,
+      "title": "服务-模型累计 Token",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 37},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "sum by (client_service, model) (ollama_tokens_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\"})", "format": "table", "instant": true, "legendFormat": "{{client_service}} / {{model}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
+      "options": {"cellHeight": "sm", "showHeader": true}
+    },
+    {
+      "id": 16,
+      "title": "服务-模型请求速率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 37},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "sum by (client_service, model) (rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",client_service=~\"$client_service\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{client_service}} / {{model}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
     }
   ]
 }

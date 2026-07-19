@@ -139,6 +139,7 @@ test('integrates Ollama monitoring and model-specific email alerts', async () =>
   assert.match(compose, /OLLAMA_UPSTREAM_URL/);
   assert.match(compose, /network_mode: host/);
   assert.match(compose, /OLLAMA_METRICS_HOST/);
+  assert.match(compose, /OLLAMA_DEFAULT_CLIENT_SERVICE/);
   assert.match(prometheus, /job_name: ollama/);
   assert.match(prometheus, /host\.docker\.internal:11435/);
   for (const alert of ['OllamaDown', 'OllamaModelUnavailable', 'OllamaModelErrors']) {
@@ -163,6 +164,8 @@ test('provisions an Ollama dashboard alongside NextOffer', async () => {
   assert.match(serialized, /ollama_prompt_tokens_total/);
   assert.match(serialized, /ollama_generated_tokens_total/);
   assert.match(serialized, /ollama_tokens_total/);
+  assert.match(serialized, /client_service/);
+  assert.match(serialized, /服务-模型累计 Token/);
   assert.match(serialized, /ollama_errors_total/);
   assert.match(serialized, /ollama_request_duration_seconds_bucket/);
   assert.match(serialized, /ollama_model_vram_bytes/);

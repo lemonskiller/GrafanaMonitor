@@ -15,6 +15,7 @@ test('records Ollama usage and errors with the model email group', () => {
   metrics.recordRequest({
     model: 'qwen3:8b',
     endpoint: 'chat',
+    clientService: 'open-webui',
     status: 500,
     durationSeconds: 2.5,
     promptTokens: 12,
@@ -23,14 +24,14 @@ test('records Ollama usage and errors with the model email group', () => {
   });
 
   const output = metrics.render({ up: true, available: [], loaded: [] });
-  const labels = 'model="qwen3:8b",endpoint="chat",status="500",alert_email_group="ollama-qwen"';
+  const labels = 'model="qwen3:8b",endpoint="chat",client_service="open-webui",status="500",alert_email_group="ollama-qwen"';
 
   assert.match(output, new RegExp(`ollama_requests_total\\{${labels}\\} 1`));
-  assert.match(output, /ollama_errors_total\{model="qwen3:8b",endpoint="chat",alert_email_group="ollama-qwen"\} 1/);
-  assert.match(output, /ollama_prompt_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 12/);
-  assert.match(output, /ollama_generated_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 4/);
-  assert.match(output, /ollama_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 16/);
-  assert.match(output, /ollama_request_duration_seconds_count\{model="qwen3:8b",endpoint="chat",alert_email_group="ollama-qwen"\} 1/);
+  assert.match(output, /ollama_errors_total\{model="qwen3:8b",endpoint="chat",client_service="open-webui",alert_email_group="ollama-qwen"\} 1/);
+  assert.match(output, /ollama_prompt_tokens_total\{model="qwen3:8b",client_service="open-webui",alert_email_group="ollama-qwen"\} 12/);
+  assert.match(output, /ollama_generated_tokens_total\{model="qwen3:8b",client_service="open-webui",alert_email_group="ollama-qwen"\} 4/);
+  assert.match(output, /ollama_tokens_total\{model="qwen3:8b",client_service="open-webui",alert_email_group="ollama-qwen"\} 16/);
+  assert.match(output, /ollama_request_duration_seconds_count\{model="qwen3:8b",endpoint="chat",client_service="open-webui",alert_email_group="ollama-qwen"\} 1/);
 });
 
 test('exports configured model availability and runtime memory', () => {
@@ -82,9 +83,9 @@ test('proxies streaming Ollama responses and records input, output, and total to
 
   assert.equal(response.status, 200);
   assert.match(body, /"done":true/);
-  assert.match(metrics, /ollama_prompt_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 7/);
-  assert.match(metrics, /ollama_generated_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 3/);
-  assert.match(metrics, /ollama_tokens_total\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 10/);
+  assert.match(metrics, /ollama_prompt_tokens_total\{model="qwen3:8b",client_service="unknown-service",alert_email_group="ollama-qwen"\} 7/);
+  assert.match(metrics, /ollama_generated_tokens_total\{model="qwen3:8b",client_service="unknown-service",alert_email_group="ollama-qwen"\} 3/);
+  assert.match(metrics, /ollama_tokens_total\{model="qwen3:8b",client_service="unknown-service",alert_email_group="ollama-qwen"\} 10/);
 });
 
 test('counts Ollama errors returned inside a successful response stream', async (t) => {
@@ -109,7 +110,7 @@ test('counts Ollama errors returned inside a successful response stream', async 
   }).then((response) => response.text());
   const metrics = await fetch(`http://127.0.0.1:${monitorPort}/metrics`).then((response) => response.text());
 
-  assert.match(metrics, /ollama_errors_total\{model="qwen3:8b",endpoint="generate",alert_email_group="ollama-qwen"\} 1/);
+  assert.match(metrics, /ollama_errors_total\{model="qwen3:8b",endpoint="generate",client_service="unknown-service",alert_email_group="ollama-qwen"\} 1/);
 });
 
 test('does not count non-model Ollama inventory requests as unknown model usage', async (t) => {
@@ -131,4 +132,31 @@ test('does not count non-model Ollama inventory requests as unknown model usage'
   const metrics = await fetch(`http://127.0.0.1:${monitorPort}/metrics`).then((response) => response.text());
 
   assert.doesNotMatch(metrics, /ollama_requests_total\{model="unknown"/);
+});
+
+test('labels model usage by caller service header', async (t) => {
+  const upstream = createServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{"model":"qwen3:8b","done":true,"prompt_eval_count":5,"eval_count":2}\n');
+  });
+  const upstreamPort = await listen(upstream);
+  t.after(() => close(upstream));
+
+  const monitor = createOllamaMonitor({
+    upstreamUrl: `http://127.0.0.1:${upstreamPort}`,
+    models: [{ name: 'qwen3:8b', alert_email_group: 'ollama-qwen' }],
+    defaultClientService: 'open-webui',
+  });
+  const monitorPort = await listen(monitor);
+  t.after(() => close(monitor));
+
+  await fetch(`http://127.0.0.1:${monitorPort}/api/generate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-service-name': 'nextoffer' },
+    body: JSON.stringify({ model: 'qwen3:8b', prompt: 'hello' }),
+  }).then((response) => response.text());
+  const metrics = await fetch(`http://127.0.0.1:${monitorPort}/metrics`).then((response) => response.text());
+
+  assert.match(metrics, /ollama_requests_total\{model="qwen3:8b",endpoint="generate",client_service="nextoffer",status="200",alert_email_group="ollama-qwen"\} 1/);
+  assert.match(metrics, /ollama_tokens_total\{model="qwen3:8b",client_service="nextoffer",alert_email_group="ollama-qwen"\} 7/);
 });
