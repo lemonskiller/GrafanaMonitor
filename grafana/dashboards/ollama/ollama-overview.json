@@ -187,14 +187,22 @@
       "type": "table",
       "gridPos": {"h": 9, "w": 24, "x": 0, "y": 28},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [
-        {"expr": "ollama_model_available{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "可用 {{model}}", "refId": "A"},
-        {"expr": "ollama_model_loaded{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "已加载 {{model}}", "refId": "B"},
-        {"expr": "ollama_model_size_bytes{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "模型大小 {{model}}", "refId": "C"},
-        {"expr": "ollama_model_vram_bytes{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "VRAM {{model}}", "refId": "D"},
-        {"expr": "ollama_model_context_length{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "上下文 {{model}}", "refId": "E"}
-      ],
-      "fieldConfig": {"defaults": {}, "overrides": []},
+      "targets": [{"expr": "ollama_model_status_info{job=\"ollama\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "{{model}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {}, "overrides": [
+        {"matcher": {"id": "byName", "options": "Time"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "Value"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "__name__"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "job"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "instance"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "service"}, "properties": [{"id": "custom.hidden", "value": true}]},
+        {"matcher": {"id": "byName", "options": "alert_email_group"}, "properties": [{"id": "displayName", "value": "告警组"}]},
+        {"matcher": {"id": "byName", "options": "model"}, "properties": [{"id": "displayName", "value": "模型"}]},
+        {"matcher": {"id": "byName", "options": "available"}, "properties": [{"id": "displayName", "value": "可用"}]},
+        {"matcher": {"id": "byName", "options": "loaded"}, "properties": [{"id": "displayName", "value": "已加载"}]},
+        {"matcher": {"id": "byName", "options": "size_bytes"}, "properties": [{"id": "displayName", "value": "模型大小(bytes)"}]},
+        {"matcher": {"id": "byName", "options": "vram_bytes"}, "properties": [{"id": "displayName", "value": "VRAM(bytes)"}]},
+        {"matcher": {"id": "byName", "options": "context_length"}, "properties": [{"id": "displayName", "value": "上下文长度"}]}
+      ]},
       "options": {"cellHeight": "sm", "showHeader": true}
     },
     {

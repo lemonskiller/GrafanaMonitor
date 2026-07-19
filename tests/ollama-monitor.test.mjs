@@ -51,6 +51,8 @@ test('exports configured model availability and runtime memory', () => {
   assert.match(output, /ollama_model_loaded\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 1/);
   assert.match(output, /ollama_model_vram_bytes\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 4000000000/);
   assert.match(output, /ollama_model_context_length\{model="qwen3:8b",alert_email_group="ollama-qwen"\} 8192/);
+  assert.match(output, /ollama_model_status_info\{model="qwen3:8b",alert_email_group="ollama-qwen",available="1",loaded="1",size_bytes="5000000000",vram_bytes="4000000000",context_length="8192"\} 1/);
+  assert.match(output, /ollama_model_status_info\{model="deepseek-r1:8b",alert_email_group="ollama-deepseek",available="0",loaded="0",size_bytes="0",vram_bytes="0",context_length="0"\} 1/);
 });
 
 test('proxies streaming Ollama responses and records input, output, and total tokens', async (t) => {

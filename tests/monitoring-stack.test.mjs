@@ -169,4 +169,5 @@ test('provisions an Ollama dashboard alongside NextOffer', async () => {
   assert.match(serialized, /ollama_errors_total/);
   assert.match(serialized, /ollama_request_duration_seconds_bucket/);
   assert.match(serialized, /ollama_model_vram_bytes/);
+  assert.match(serialized, /ollama_model_status_info/);
 });

@@ -122,6 +122,21 @@ export class MetricsRegistry {
       const group = this.groupFor(model);
       lines.push(`ollama_model_context_length{${labels({ model, alert_email_group: group })}} ${Number(loadedByModel.get(model)?.context_length) || 0}`);
     }
+    lines.push('# HELP ollama_model_status_info Ollama model status and capacity in a single row per model.', '# TYPE ollama_model_status_info gauge');
+    for (const model of inventoryModels) {
+      const group = this.groupFor(model);
+      const availableModel = availableByModel.get(model);
+      const loadedModel = loadedByModel.get(model);
+      lines.push(`ollama_model_status_info{${labels({
+        model,
+        alert_email_group: group,
+        available: availableModel ? 1 : 0,
+        loaded: loadedModel ? 1 : 0,
+        size_bytes: Number(availableModel?.size) || 0,
+        vram_bytes: Number(loadedModel?.size_vram) || 0,
+        context_length: Number(loadedModel?.context_length) || 0,
+      })}} 1`);
+    }
     lines.push(
       '# HELP ollama_requests_total Ollama API requests observed by the proxy.',
       '# TYPE ollama_requests_total counter',
