@@ -20,10 +20,9 @@ services:
     depends_on:
       - alertmanager
       - blackbox-exporter
-      - docker-socket-proxy
 
   alertmanager:
-    image: prom/alertmanager:v0.32.1
+    image: docker.m.daocloud.io/prom/alertmanager:v0.32.1
     restart: unless-stopped
     ports:
       - "${ALERTMANAGER_BIND_ADDRESS:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
@@ -37,7 +36,7 @@ services:
       - smtp_password
 
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.28.0
+    image: docker.m.daocloud.io/prom/blackbox-exporter:v0.28.0
     restart: unless-stopped
     ports:
       - "${BLACKBOX_BIND_ADDRESS:-127.0.0.1}:${BLACKBOX_PORT:-9115}:9115"
@@ -47,7 +46,7 @@ services:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
 
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: docker.m.daocloud.io/prom/node-exporter:v1.11.1
     restart: unless-stopped
     pid: host
     command:
@@ -62,7 +61,7 @@ services:
       - /run/dbus:/run/dbus:ro
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.57.0
+    image: ghcr.m.daocloud.io/google/cadvisor:v0.57.0
     restart: unless-stopped
     privileged: true
     devices:
@@ -75,18 +74,6 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
-
-  docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:v0.4.2
-    restart: unless-stopped
-    environment:
-      CONTAINERS: "1"
-      INFO: "1"
-      NETWORKS: "1"
-      PING: "1"
-      POST: "0"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   grafana:
     image: docker.m.daocloud.io/grafana/grafana:13.1.0

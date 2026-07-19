@@ -1,18 +1,1 @@
-[
-  {
-    "targets": ["https://service.example.com/health"],
-    "labels": {
-      "service": "example-http-service",
-      "environment": "production",
-      "module": "http_2xx"
-    }
-  },
-  {
-    "targets": ["10.0.0.11:5432"],
-    "labels": {
-      "service": "example-postgres",
-      "environment": "production",
-      "module": "tcp_connect"
-    }
-  }
-]
+[]

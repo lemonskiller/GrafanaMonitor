@@ -1,12 +1,1 @@
-[
-  {
-    "targets": ["10.0.0.11:8000"],
-    "labels": {
-      "service": "model-training",
-      "model": "recommendation-v2",
-      "run_id": "replace-with-current-run-id",
-      "environment": "production",
-      "alert_email_group": "recommendation-team"
-    }
-  }
-]
+[]
