@@ -17,7 +17,13 @@
 | HTTP/TCP 服务 | Blackbox Exporter | 可用性、延迟、TLS 与 TCP 连接 |
 | 告警通知 | Alertmanager | 运维默认邮箱、按模型或团队分组邮箱 |
 
-Grafana 会自动创建 `NextOffer / NextOffer 服务监控` 和 `Infrastructure / 基础设施 / 容器 / 模型训练总览` 两个仪表盘。
+Grafana 会自动创建以下仪表盘：
+
+- `NextOffer / NextOffer 服务监控`
+- `Infrastructure / 主机资源监控`
+- `Infrastructure / 容器资源监控`
+- `Infrastructure / GPU 监控`
+- `Infrastructure / 目录大小监控`
 
 ## 前置条件
 
