@@ -11,12 +11,13 @@
 | Linux 主机 | node-exporter | CPU、内存、磁盘、网络、systemd 服务、进程数量 |
 | Docker | cAdvisor | 所有容器的 CPU、内存、网络和存活状态 |
 | 容器业务指标 | Docker 服务发现 | 带 `prometheus.io/*` 标签的容器 `/metrics` |
-| NVIDIA GPU | DCGM Exporter | GPU/显存利用率、温度、功耗、XID 错误 |
+| NVIDIA GPU | node-exporter textfile collector 或 DCGM Exporter | GPU/显存利用率、温度、功耗、XID 错误 |
+| 目录大小 | 主机自定义采集器 + node-exporter textfile collector | 指定根目录下最大的一级目录、目录大小趋势、扫描延迟 |
 | 模型训练 | Prometheus Client | loss、运行状态、失败状态、最后进度时间 |
 | HTTP/TCP 服务 | Blackbox Exporter | 可用性、延迟、TLS 与 TCP 连接 |
 | 告警通知 | Alertmanager | 运维默认邮箱、按模型或团队分组邮箱 |
 
-Grafana 会自动创建 `NextOffer / NextOffer 服务监控` 和 `NextOffer / 基础设施 / 容器 / 模型训练总览` 两个仪表盘。
+Grafana 会自动创建 `NextOffer / NextOffer 服务监控` 和 `Infrastructure / 基础设施 / 容器 / 模型训练总览` 两个仪表盘。
 
 ## 前置条件
 
@@ -220,6 +221,19 @@ ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 -L 9093:127.0.0.1:9093 user@mo
 ```
 
 如果必须对团队开放 Grafana，请通过带 HTTPS 和身份认证的反向代理发布，并保持 Prometheus、Alertmanager 和 exporter 端口不对公网开放。
+
+## 6. 启用本机 GPU 和目录大小采集
+
+中心节点如果也需要监控本机 GPU 与目录大小，启用主机采集器：
+
+```bash
+bash scripts/install-host-metrics-service.sh
+docker compose up -d node-exporter prometheus grafana
+```
+
+脚本会在 root 下安装系统级 service；非 root 下安装当前用户的 systemd user service。生产环境建议使用系统级 service，确保机器重启后无需用户登录也会自动采集。
+
+默认采集 `/home/wuxinze` 和 `/nfs/wxz/others` 下最大的 30 个一级目录，每 5 分钟更新一次。需要调整时修改 `systemd/grafana-host-metrics.service` 里的 `HOST_DIRECTORY_ROOTS`、`HOST_DIRECTORY_TOP_N` 和 `HOST_METRICS_INTERVAL`，然后重新安装服务。
 
 ## 运维与验证
 

@@ -1,0 +1,21 @@
+[Unit]
+Description=GrafanaMonitor host GPU and directory metrics collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/nfs/wxz/others/GrafanaMonitor
+Environment=HOST_METRICS_OUTPUT_FILE=/nfs/wxz/others/GrafanaMonitor/runtime/textfile/host_custom.prom
+Environment="HOST_DIRECTORY_ROOTS=/home/wuxinze /nfs/wxz/others"
+Environment=HOST_DIRECTORY_TOP_N=30
+Environment=HOST_DIRECTORY_DU_TIMEOUT=3
+Environment=HOST_METRICS_INTERVAL=300
+Environment=HOST_NODE_LABEL=monitoring-host
+Environment=HOST_ENVIRONMENT_LABEL=monitoring
+ExecStart=/usr/bin/env bash /nfs/wxz/others/GrafanaMonitor/scripts/collect-host-metrics.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

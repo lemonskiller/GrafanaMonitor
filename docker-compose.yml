@@ -53,12 +53,14 @@ services:
       - --path.rootfs=/host
       - --collector.systemd
       - --collector.processes
+      - --collector.textfile.directory=/textfile
       - --web.listen-address=:9100
     ports:
       - "${NODE_EXPORTER_BIND_ADDRESS:-127.0.0.1}:${NODE_EXPORTER_PORT:-9100}:9100"
     volumes:
       - /:/host:ro,rslave
       - /run/dbus:/run/dbus:ro
+      - ./runtime/textfile:/textfile:ro
 
   cadvisor:
     image: ghcr.m.daocloud.io/google/cadvisor:v0.57.0
