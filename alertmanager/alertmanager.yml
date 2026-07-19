@@ -1,0 +1,43 @@
+global:
+  smtp_from: monitor@example.com
+  smtp_smarthost: smtp.example.com:587
+  smtp_auth_username: monitor@example.com
+  smtp_auth_password_file: /run/secrets/smtp_password
+  smtp_require_tls: true
+
+route:
+  receiver: operations-email
+  group_by: [alertname, model, run_id, alert_email_group]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: ['alert_email_group="recommendation-team"']
+      receiver: recommendation-team-email
+    - matchers: ['alert_email_group="vision-team"']
+      receiver: vision-team-email
+
+receivers:
+  - name: operations-email
+    email_configs:
+      - to: ops@example.com
+        send_resolved: true
+        headers:
+          subject: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} {{ .CommonLabels.model }}'
+  - name: recommendation-team-email
+    email_configs:
+      - to: recommendation-team@example.com
+        send_resolved: true
+        headers:
+          subject: '[{{ .Status | toUpper }}] 推荐模型 {{ .CommonLabels.model }} 故障'
+  - name: vision-team-email
+    email_configs:
+      - to: vision-team@example.com
+        send_resolved: true
+        headers:
+          subject: '[{{ .Status | toUpper }}] 视觉模型 {{ .CommonLabels.model }} 故障'
+
+inhibit_rules:
+  - source_matchers: ['severity="critical"']
+    target_matchers: ['severity="warning"']
+    equal: [alertname, instance, model]

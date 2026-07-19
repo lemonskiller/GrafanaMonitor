@@ -1,0 +1,92 @@
+groups:
+  - name: infrastructure
+    rules:
+      - alert: NodeDown
+        expr: up{job="node"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: host
+        annotations:
+          summary: '节点 {{ $labels.node }} 失联'
+          description: 'Prometheus 已连续 2 分钟无法采集 {{ $labels.instance }} 的主机指标。'
+
+      - alert: HostMemoryHigh
+        expr: 100 * (1 - node_memory_MemAvailable_bytes{job="node"} / node_memory_MemTotal_bytes{job="node"}) > 90
+        for: 10m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: '节点 {{ $labels.node }} 内存使用率过高'
+          description: '可用内存已连续 10 分钟低于 10%。'
+
+      - alert: HostDiskAlmostFull
+        expr: 100 * (1 - node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay"}) > 90
+        for: 15m
+        labels:
+          severity: critical
+          category: host
+        annotations:
+          summary: '节点 {{ $labels.node }} 磁盘空间不足'
+          description: '挂载点 {{ $labels.mountpoint }} 使用率已连续 15 分钟超过 90%。'
+
+      - alert: SystemdUnitFailed
+        expr: node_systemd_unit_state{job="node",state="failed"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          category: service
+        annotations:
+          summary: '节点 {{ $labels.node }} 的 systemd 服务 {{ $labels.name }} 失败'
+          description: 'systemd unit {{ $labels.name }} 已连续 5 分钟处于 failed 状态。'
+
+      - alert: ContainerMetricsMissing
+        expr: up{job="cadvisor"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: '节点 {{ $labels.node }} 容器监控失联'
+          description: 'cAdvisor {{ $labels.instance }} 已连续 5 分钟无法采集。'
+
+      - alert: DockerServiceTargetDown
+        expr: up{job="docker-services"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: '容器服务 {{ $labels.service }} 指标端点失联'
+          description: '容器 {{ $labels.container }} 的 Prometheus 指标端点已连续 3 分钟无法采集。'
+
+      - alert: GpuXidError
+        expr: DCGM_FI_DEV_XID_ERRORS > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: gpu
+        annotations:
+          summary: '节点 {{ $labels.node }} GPU {{ $labels.gpu }} 出现 XID 错误'
+          description: 'DCGM 检测到 GPU 驱动或硬件 XID 错误，当前值为 {{ $value }}。'
+
+      - alert: EndpointProbeFailed
+        expr: probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: endpoint
+        annotations:
+          summary: '服务 {{ $labels.service }} 可用性探测失败'
+          description: '{{ $labels.module }} 探测 {{ $labels.instance }} 已连续 2 分钟失败。'
+
+      - alert: ServiceMetricsTargetDown
+        expr: up{job=~"nextoffer|service-metrics"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          category: service
+        annotations:
+          summary: '服务 {{ $labels.service }} 指标端点失联'
+          description: '{{ $labels.job }} 目标 {{ $labels.instance }} 已连续 3 分钟无法采集。'

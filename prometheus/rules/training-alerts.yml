@@ -1,0 +1,32 @@
+groups:
+  - name: model-training
+    rules:
+      - alert: TrainingTargetDown
+        expr: up{job="training"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: model-training
+        annotations:
+          summary: '模型 {{ $labels.model }} 的训练指标端点失联'
+          description: '实例 {{ $labels.instance }} 已连续 2 分钟无法采集；run_id={{ $labels.run_id }}，alert_email_group={{ $labels.alert_email_group }}。'
+
+      - alert: TrainingJobFailed
+        expr: training_job_failed{job="training"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: model-training
+        annotations:
+          summary: '模型 {{ $labels.model }} 训练失败'
+          description: '训练任务显式上报失败；run_id={{ $labels.run_id }}，实例={{ $labels.instance }}，alert_email_group={{ $labels.alert_email_group }}。'
+
+      - alert: TrainingProgressStalled
+        expr: (time() - training_last_progress_timestamp_seconds{job="training"} > 600) and on(instance, model, run_id) (training_job_running{job="training"} == 1)
+        for: 5m
+        labels:
+          severity: warning
+          category: model-training
+        annotations:
+          summary: '模型 {{ $labels.model }} 训练进度停滞'
+          description: '运行中的训练任务超过 15 分钟没有更新进度；run_id={{ $labels.run_id }}，实例={{ $labels.instance }}，alert_email_group={{ $labels.alert_email_group }}。'

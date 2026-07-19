@@ -2,15 +2,118 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [alertmanager:9093]
+
 scrape_configs:
   - job_name: nextoffer
     metrics_path: /actuator/prometheus
     honor_labels: true
     file_sd_configs:
-      - files:
-          - /etc/prometheus/targets/*.json
+      - files: [/etc/prometheus/targets/nextoffer.json]
         refresh_interval: 30s
+
+  - job_name: node
+    static_configs:
+      - targets: [node-exporter:9100]
+        labels:
+          node: monitoring-host
+          environment: monitoring
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/hosts.json]
+        refresh_interval: 30s
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: [cadvisor:8080]
+        labels:
+          node: monitoring-host
+          environment: monitoring
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/hosts.json]
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: "([^:]+)(?::[0-9]+)?"
+        target_label: __address__
+        replacement: "$1:8080"
+
+  - job_name: gpu
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/hosts.json]
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [gpu]
+        regex: "true"
+        action: keep
+      - source_labels: [__address__]
+        regex: "([^:]+)(?::[0-9]+)?"
+        target_label: __address__
+        replacement: "$1:9400"
+
+  - job_name: training
+    honor_labels: true
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/training.json]
+        refresh_interval: 15s
+
+  - job_name: service-metrics
+    honor_labels: true
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/services.json]
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [metrics_path]
+        regex: "(.+)"
+        target_label: __metrics_path__
+      - source_labels: [scheme]
+        regex: "(https?)"
+        target_label: __scheme__
+
+  - job_name: docker-services
+    docker_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_prometheus_io_scrape]
+        regex: "true"
+        action: keep
+      - source_labels: [__address__, __meta_docker_container_label_prometheus_io_port]
+        regex: "([^:]+)(?::[0-9]+)?;([0-9]+)"
+        target_label: __address__
+        replacement: "$1:$2"
+      - source_labels: [__meta_docker_container_label_prometheus_io_path]
+        regex: "(.+)"
+        target_label: __metrics_path__
+      - source_labels: [__meta_docker_container_label_prometheus_io_scheme]
+        regex: "(https?)"
+        target_label: __scheme__
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [__meta_docker_container_name]
+        regex: "/(.*)"
+        target_label: container
+
+  - job_name: blackbox
+    metrics_path: /probe
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/probes.json]
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [module]
+        target_label: __param_module
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
 
   - job_name: prometheus
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: [localhost:9090]

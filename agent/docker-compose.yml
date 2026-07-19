@@ -1,0 +1,39 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.systemd
+      - --collector.processes
+      - --web.listen-address=:9100
+    ports:
+      - "${AGENT_BIND_ADDRESS:-0.0.0.0}:9100:9100"
+    volumes:
+      - /:/host:ro,rslave
+      - /run/dbus:/run/dbus:ro
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.57.0
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    ports:
+      - "${AGENT_BIND_ADDRESS:-0.0.0.0}:8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:4.6.0-4.8.3
+    profiles: [gpu]
+    restart: unless-stopped
+    runtime: nvidia
+    cap_add: [SYS_ADMIN]
+    ports:
+      - "${AGENT_BIND_ADDRESS:-0.0.0.0}:9400:9400"

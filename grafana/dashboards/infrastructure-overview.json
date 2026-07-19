@@ -1,0 +1,166 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "在线节点",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "sum(up{job=\"node\",environment=~\"$environment\"})", "legendFormat": "节点", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
+    },
+    {
+      "id": 2,
+      "title": "运行容器",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "count(container_last_seen{job=\"cadvisor\",image!=\"\",environment=~\"$environment\"})", "legendFormat": "容器", "refId": "A"}],
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
+    },
+    {
+      "id": 3,
+      "title": "GPU 在线数",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "count(DCGM_FI_DEV_GPU_UTIL{environment=~\"$environment\"})", "legendFormat": "GPU", "refId": "A"}],
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
+    },
+    {
+      "id": 4,
+      "title": "训练失败任务",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "sum(training_job_failed{job=\"training\",environment=~\"$environment\"})", "legendFormat": "失败", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "textMode": "auto"}
+    },
+    {
+      "id": 5,
+      "title": "主机 CPU 使用率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "100 - 100 * avg by (node) (rate(node_cpu_seconds_total{job=\"node\",mode=\"idle\",environment=~\"$environment\",node=~\"$node\"}[5m]))", "legendFormat": "{{node}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 6,
+      "title": "主机内存使用率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"node\",environment=~\"$environment\",node=~\"$node\"} / node_memory_MemTotal_bytes{job=\"node\",environment=~\"$environment\",node=~\"$node\"})", "legendFormat": "{{node}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 7,
+      "title": "根文件系统使用率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\",environment=~\"$environment\",node=~\"$node\"} / node_filesystem_size_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\",environment=~\"$environment\",node=~\"$node\"})", "legendFormat": "{{node}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 8,
+      "title": "主机网络吞吐",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [
+        {"expr": "sum by (node) (rate(node_network_receive_bytes_total{job=\"node\",device!~\"lo|veth.*|docker.*\",environment=~\"$environment\",node=~\"$node\"}[5m]))", "legendFormat": "{{node}} 接收", "refId": "A"},
+        {"expr": "sum by (node) (rate(node_network_transmit_bytes_total{job=\"node\",device!~\"lo|veth.*|docker.*\",environment=~\"$environment\",node=~\"$node\"}[5m]))", "legendFormat": "{{node}} 发送", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 9,
+      "title": "容器 CPU",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "topk(15, 100 * sum by (name, node) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",image!=\"\",environment=~\"$environment\"}[5m])))", "legendFormat": "{{node}} / {{name}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 10,
+      "title": "容器内存",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "topk(15, container_memory_working_set_bytes{job=\"cadvisor\",image!=\"\",environment=~\"$environment\"})", "legendFormat": "{{node}} / {{name}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 11,
+      "title": "GPU 利用率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "DCGM_FI_DEV_GPU_UTIL{environment=~\"$environment\"}", "legendFormat": "{{node}} GPU {{gpu}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 12,
+      "title": "GPU 显存使用率",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "100 * DCGM_FI_DEV_FB_USED{environment=~\"$environment\"} / (DCGM_FI_DEV_FB_USED{environment=~\"$environment\"} + DCGM_FI_DEV_FB_FREE{environment=~\"$environment\"})", "legendFormat": "{{node}} GPU {{gpu}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 13,
+      "title": "训练损失",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "training_loss{job=\"training\",environment=~\"$environment\",model=~\"$model\"}", "legendFormat": "{{model}} / {{run_id}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 14,
+      "title": "训练进度最后更新时间",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "time() - training_last_progress_timestamp_seconds{job=\"training\",environment=~\"$environment\",model=~\"$model\"}", "format": "table", "instant": true, "legendFormat": "{{model}} / {{run_id}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "options": {"showHeader": true, "cellHeight": "sm"}
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["infrastructure", "docker", "gpu", "training"],
+  "templating": {
+    "list": [
+      {"name": "environment", "label": "环境", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"}, "query": {"query": "label_values(up, environment)", "refId": "PrometheusVariableQueryEditor-VariableQuery"}, "definition": "label_values(up, environment)", "includeAll": true, "allValue": ".*", "multi": true, "refresh": 1, "current": {"text": "All", "value": "$__all"}, "options": []},
+      {"name": "node", "label": "节点", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"}, "query": {"query": "label_values(up{job=\"node\",environment=~\"$environment\"}, node)", "refId": "PrometheusVariableQueryEditor-VariableQuery"}, "definition": "label_values(up{job=\"node\",environment=~\"$environment\"}, node)", "includeAll": true, "allValue": ".*", "multi": true, "refresh": 1, "current": {"text": "All", "value": "$__all"}, "options": []},
+      {"name": "model", "label": "模型", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"}, "query": {"query": "label_values(up{job=\"training\",environment=~\"$environment\"}, model)", "refId": "PrometheusVariableQueryEditor-VariableQuery"}, "definition": "label_values(up{job=\"training\",environment=~\"$environment\"}, model)", "includeAll": true, "allValue": ".*", "multi": true, "refresh": 1, "current": {"text": "All", "value": "$__all"}, "options": []}
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "基础设施 / 容器 / 模型训练总览",
+  "uid": "infrastructure-overview",
+  "version": 1
+}
