@@ -66,7 +66,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "请求/秒", "refId": "A"}],
+      "targets": [{"expr": "sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "请求/秒", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto"}
     },
@@ -76,7 +76,7 @@
       "type": "stat",
       "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
-      "targets": [{"expr": "100 * sum(rate(ollama_errors_total{job=\"ollama\",model=~\"$model\"}[5m])) / clamp_min(sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\"}[5m])), 0.001)", "legendFormat": "错误率", "refId": "A"}],
+      "targets": [{"expr": "100 * sum(rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m])) / clamp_min(sum(rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m])), 0.001)", "legendFormat": "错误率", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
       "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "textMode": "auto"}
     },
@@ -141,8 +141,8 @@
       "gridPos": {"h": 9, "w": 12, "x": 12, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
       "targets": [
-        {"expr": "sum by (model) (rate(ollama_requests_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "{{model}} 请求", "refId": "A"},
-        {"expr": "sum by (model) (rate(ollama_errors_total{job=\"ollama\",model=~\"$model\"}[5m]))", "legendFormat": "{{model}} 错误", "refId": "B"}
+        {"expr": "sum by (model) (rate(ollama_requests_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 请求", "refId": "A"},
+        {"expr": "sum by (model) (rate(ollama_errors_total{job=\"ollama\",model=~\"$model\",model!=\"unknown\",endpoint!=\"other\"}[5m]))", "legendFormat": "{{model}} 错误", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
       "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}

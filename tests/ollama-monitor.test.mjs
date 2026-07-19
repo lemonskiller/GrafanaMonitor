@@ -111,3 +111,24 @@ test('counts Ollama errors returned inside a successful response stream', async 
 
   assert.match(metrics, /ollama_errors_total\{model="qwen3:8b",endpoint="generate",alert_email_group="ollama-qwen"\} 1/);
 });
+
+test('does not count non-model Ollama inventory requests as unknown model usage', async (t) => {
+  const upstream = createServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{"models":[]}\n');
+  });
+  const upstreamPort = await listen(upstream);
+  t.after(() => close(upstream));
+
+  const monitor = createOllamaMonitor({
+    upstreamUrl: `http://127.0.0.1:${upstreamPort}`,
+    models: [],
+  });
+  const monitorPort = await listen(monitor);
+  t.after(() => close(monitor));
+
+  await fetch(`http://127.0.0.1:${monitorPort}/api/tags`).then((response) => response.text());
+  const metrics = await fetch(`http://127.0.0.1:${monitorPort}/metrics`).then((response) => response.text());
+
+  assert.doesNotMatch(metrics, /ollama_requests_total\{model="unknown"/);
+});

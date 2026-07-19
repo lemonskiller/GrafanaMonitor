@@ -188,6 +188,7 @@ export const createOllamaMonitor = ({ upstreamUrl, models = [], defaultGroup = '
     const record = ({ status = 0, payload = null, error = false } = {}) => {
       if (recorded) return;
       recorded = true;
+      if (endpoint === 'other') return;
       const durationSeconds = Number(process.hrtime.bigint() - startedAt) / 1e9;
       metrics.recordRequest({
         model: payload?.model || requestModel,
