@@ -97,6 +97,13 @@ scrape_configs:
           service: ollama
           environment: production
 
+  - job_name: vllm
+    metrics_path: /metrics
+    honor_labels: true
+    file_sd_configs:
+      - files: [/etc/prometheus/targets/vllm.json]
+        refresh_interval: 30s
+
   - job_name: prometheus
     static_configs:
       - targets: [localhost:9090]

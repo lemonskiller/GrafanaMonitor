@@ -169,12 +169,18 @@ test('documents the NextOffer AI latency dashboard and phase semantics', async (
   const readme = await read('README.md');
 
   assert.match(readme, /nextoffer_ai_phase_duration_seconds/);
+  assert.match(readme, /stream_open/);
+  assert.match(readme, /provider_first_token/);
   assert.match(readme, /first_token/);
+  assert.match(readme, /answer_first_token/);
+  assert.match(readme, /reasoning_generation/);
   assert.match(readme, /answer_generation/);
   assert.match(readme, /answer_complete/);
+  assert.match(readme, /suggestions_dispatch/);
   assert.match(readme, /suggestions_complete/);
   assert.match(readme, /conversation_total/);
-  assert.match(readme, /AI 平均耗时占比/);
+  assert.match(readme, /NextOffer \/ 调整意见耗时/);
+  assert.match(readme, /vLLM 排队/);
 });
 
 test('accounts for browser network and scheduling time in the AI latency share panel', async () => {
@@ -194,6 +200,55 @@ test('keeps the AI latency share visible when a phase has no samples', async () 
   for (const target of panel.targets.filter(candidate => ['A', 'B', 'C'].includes(candidate.refId))) {
     assert.match(target.expr, /or on\(\) vector\(0\)$/);
   }
+});
+
+test('provisions a detailed adjustment latency dashboard with vLLM drill-down', async () => {
+  const provider = await read('grafana/provisioning/dashboards/dashboards.yml');
+  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer/adjustment-overview.json'));
+  const serialized = JSON.stringify(dashboard);
+  const titles = dashboard.panels.map(panel => panel.title);
+  const variables = dashboard.templating.list.map(variable => variable.name);
+
+  assert.match(provider, /path: \/var\/lib\/grafana\/dashboards\/nextoffer/);
+  assert.equal(dashboard.uid, 'nextoffer-adjustment-latency');
+  assert.equal(dashboard.title, '调整意见耗时');
+  for (const variable of ['intent', 'provider', 'model', 'status', 'vllm_model']) {
+    assert.ok(variables.includes(variable));
+  }
+  for (const phase of [
+    'stream_open',
+    'provider_first_token',
+    'first_token',
+    'answer_first_token',
+    'reasoning_generation',
+    'answer_generation',
+    'answer_complete',
+    'suggestions_dispatch',
+    'suggestions_complete',
+    'conversation_total',
+  ]) {
+    assert.match(serialized, new RegExp(phase));
+  }
+  for (const title of [
+    '首 Token P95',
+    '正文完成 P95',
+    '快捷建议 P95',
+    '总耗时 P95',
+    '非重叠阶段平均耗时',
+    '阶段 P50 / P95 趋势',
+    'vLLM 排队 / Prefill / Decode P95',
+    'vLLM TTFT / TPOT / E2E P95',
+    'vLLM 请求队列',
+  ]) {
+    assert.ok(titles.includes(title));
+  }
+  assert.match(serialized, /vllm:request_queue_time_seconds_bucket/);
+  assert.match(serialized, /vllm:request_prefill_time_seconds_bucket/);
+  assert.match(serialized, /vllm:request_decode_time_seconds_bucket/);
+  assert.match(serialized, /vllm:time_to_first_token_seconds_bucket/);
+  assert.match(serialized, /vllm:time_per_output_token_seconds_bucket/);
+  assert.match(serialized, /vllm:request_time_per_output_token_seconds_bucket/);
+  assert.match(serialized, /vllm:e2e_request_latency_seconds_bucket/);
 });
 
 test('integrates Ollama monitoring and model-specific email alerts', async () => {
@@ -220,15 +275,16 @@ test('integrates Ollama monitoring and model-specific email alerts', async () =>
   assert.ok(models.models.every((model) => model.name && model.alert_email_group));
 });
 
-test('provisions an Ollama dashboard alongside NextOffer', async () => {
+test('provisions a provider-neutral model traffic dashboard for Ollama and vLLM', async () => {
   const provider = await read('grafana/provisioning/dashboards/dashboards.yml');
-  const dashboard = JSON.parse(await read('grafana/dashboards/ollama/ollama-overview.json'));
+  const dashboard = JSON.parse(await read('grafana/dashboards/model-traffic/model-traffic-overview.json'));
   const serialized = JSON.stringify(dashboard);
 
-  assert.match(provider, /folder: Ollama/);
-  assert.match(provider, /path: \/var\/lib\/grafana\/dashboards\/ollama/);
-  assert.equal(dashboard.uid, 'ollama-model-usage-overview');
-  assert.ok(dashboard.panels.length >= 12);
+  assert.match(provider, /folder: Model Traffic/);
+  assert.match(provider, /path: \/var\/lib\/grafana\/dashboards\/model-traffic/);
+  assert.equal(dashboard.uid, 'model-traffic-overview');
+  assert.equal(dashboard.title, '模型流量监控');
+  assert.ok(dashboard.panels.length >= 18);
   assert.match(serialized, /ollama_prompt_tokens_total/);
   assert.match(serialized, /ollama_generated_tokens_total/);
   assert.match(serialized, /ollama_tokens_total/);
@@ -238,4 +294,23 @@ test('provisions an Ollama dashboard alongside NextOffer', async () => {
   assert.match(serialized, /ollama_request_duration_seconds_bucket/);
   assert.match(serialized, /ollama_model_vram_bytes/);
   assert.match(serialized, /ollama_model_status_info/);
+  assert.match(serialized, /vllm:prompt_tokens_total/);
+  assert.match(serialized, /vllm:generation_tokens_total/);
+  assert.match(serialized, /vllm:request_success_total/);
+  assert.match(serialized, /vllm:time_to_first_token_seconds_bucket/);
+  assert.match(serialized, /vllm:e2e_request_latency_seconds_bucket/);
+  assert.match(serialized, /vllm:num_requests_waiting/);
+});
+
+test('discovers vLLM native Prometheus metrics from a dedicated target file', async () => {
+  const prometheus = await read('prometheus/prometheus.yml');
+  const targets = JSON.parse(await read('prometheus/targets/vllm.json'));
+
+  assert.match(prometheus, /job_name: vllm/);
+  assert.match(prometheus, /metrics_path: \/metrics/);
+  assert.match(prometheus, /\/etc\/prometheus\/targets\/vllm\.json/);
+  assert.ok(Array.isArray(targets));
+  assert.ok(Array.isArray(targets[0].targets));
+  assert.ok(targets[0].targets.length >= 1);
+  assert.equal(targets[0].labels.service, 'vllm');
 });

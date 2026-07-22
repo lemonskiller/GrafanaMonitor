@@ -1,0 +1,11 @@
+[
+  {
+    "targets": [
+      "host.docker.internal:8000"
+    ],
+    "labels": {
+      "service": "vllm",
+      "environment": "production"
+    }
+  }
+]

@@ -14,18 +14,19 @@
 | NVIDIA GPU | node-exporter textfile collector 或 DCGM Exporter | GPU/显存利用率、温度、功耗、XID 错误 |
 | 目录大小 | 主机自定义采集器 + node-exporter textfile collector | 指定根目录下最大的一级目录、目录大小趋势、扫描延迟 |
 | 模型训练 | Prometheus Client | loss、运行状态、失败状态、最后进度时间 |
-| Ollama 模型 | 透明监控代理 | 每模型请求、错误、耗时、输入/输出/总 token、模型与 VRAM 状态 |
+| Ollama / vLLM 模型 | Ollama 透明代理 + vLLM 原生 `/metrics` | 每模型流量、Token、排队、TTFT、TPOT、E2E 与容量状态 |
 | HTTP/TCP 服务 | Blackbox Exporter | 可用性、延迟、TLS 与 TCP 连接 |
 | 告警通知 | Alertmanager | 运维默认邮箱、按模型或团队分组邮箱 |
 
 Grafana 会自动创建以下仪表盘：
 
 - `NextOffer / NextOffer 服务监控`
+- `NextOffer / 调整意见耗时`
 - `Infrastructure / 主机资源监控`
 - `Infrastructure / 容器资源监控`
 - `Infrastructure / GPU 监控`
 - `Infrastructure / 目录大小监控`
-- `Ollama / Ollama 模型使用监控`
+- `Model Traffic / 模型流量监控`
 
 ## 前置条件
 
@@ -77,15 +78,27 @@ NextOffer 的 AI 对话耗时由 Timer `nextoffer_ai_phase_duration_seconds` 提
 
 | phase | 含义 | 占比口径 |
 | --- | --- | --- |
-| `first_token` | 主请求开始到首个 reasoning 或正文 Token | 非重叠阶段 |
-| `answer_generation` | 首 Token 到正文流完成 | 非重叠阶段 |
+| `stream_open` | 主请求开始到上游流建立 | 非重叠阶段 |
+| `provider_first_token` | 上游流建立到首个 reasoning 或正文 Token | 非重叠阶段 |
+| `first_token` | 主请求开始到首个 reasoning 或正文 Token | 累计指标，用于首 Token SLA |
+| `answer_first_token` | 主请求开始到首个正文 Token | 累计指标，可分辨 reasoning 等待 |
+| `reasoning_generation` | 首个 reasoning Token 到首个正文 Token | 非重叠阶段，仅 reasoning 模型有值 |
+| `answer_generation` | 首个正文 Token 到正文流完成 | 非重叠阶段 |
 | `answer_complete` | 主请求开始到正文流完成 | 累计指标，只用于正文 SLA |
+| `suggestions_dispatch` | 正文完成到后台快捷建议请求发起 | 非重叠阶段，反映浏览器/网络/调度空档 |
 | `suggestions_complete` | 后台快捷建议请求耗时 | 非重叠阶段 |
 | `conversation_total` | 主请求开始到快捷建议完成；无建议时到正文完成 | 累计指标和占比分母 |
 
-`NextOffer / NextOffer 服务监控` 的 AI 区域提供首 Token、正文完成、快捷建议和总耗时 P95，以及分阶段趋势和分模型平均耗时。页面顶部可按 AI 意图、供应商、模型和成功/失败状态筛选。
+`NextOffer / 调整意见耗时` 提供首 Token、正文完成、快捷建议和总耗时 P95，以及十个阶段的 P50/P95、非重叠阶段平均耗时、按供应商/模型拆分和阶段失败率。页面顶部可按 AI 意图、供应商、模型和成功/失败状态筛选。
 
-`AI 平均耗时占比` 使用三个非重叠阶段的平均耗时除以平均总耗时。三项合计未覆盖的部分主要是浏览器收到正文、发起后台建议以及两次请求之间的网络和调度间隔；比较不同模型时应保持相同筛选条件。
+定位时先看“非重叠阶段平均耗时”中最长的条目：
+
+- `stream_open` 高：NextOffer 到模型服务的连接、TLS 或响应头建立慢。
+- `provider_first_token` 高且供应商为 vLLM：继续看 vLLM 排队、Prefill 和 TTFT；排队高通常是容量不足，Prefill 高通常与输入上下文过长有关。
+- `reasoning_generation` 高：DeepSeek 等 reasoning 模型思考内容过长。
+- `answer_generation` 高：继续看 vLLM Decode、TPOT 和输出 Token/s。
+- `suggestions_dispatch` 高：慢在正文结束后的浏览器、网络或后台调度，不是建议模型生成。
+- `suggestions_complete` 高：快捷建议模型调用本身慢。
 
 ### 通用 Prometheus 指标端点
 
@@ -180,7 +193,11 @@ finally:
 
 任务正常结束并关闭指标端点后，应从该文件删除目标，否则 `TrainingTargetDown` 会按故障处理。也可以让常驻 sidecar 继续暴露最终状态。
 
-## 4. 接入 Ollama 模型使用监控
+## 4. 接入模型流量监控
+
+`Model Traffic / 模型流量监控` 同时展示 Ollama 代理指标和 vLLM 原生 Prometheus 指标。
+
+### Ollama
 
 监控代理默认连接中心节点宿主机的 `http://host.docker.internal:11434`。如果 Ollama 位于其他机器，通过环境变量指定：
 
@@ -218,7 +235,22 @@ http://monitor-host:11435
 | 输出 token | `ollama_generated_tokens_total` | `eval_count` |
 | 总 token | `ollama_tokens_total` | 输入加输出 |
 
-`Ollama / Ollama 模型使用监控` 页面按模型展示累计输入、累计输出、累计总 token，以及三类 token 的时间速率。
+Ollama 区域按调用服务和模型展示累计输入、累计输出、累计总 token，以及三类 token 的时间速率。
+
+### vLLM
+
+vLLM OpenAI-compatible 服务原生在 `/metrics` 暴露 Prometheus 指标。编辑 `prometheus/targets/vllm.json`，把示例地址改成生产 vLLM 服务的私网地址和端口，不要包含 `/v1`：
+
+```json
+[
+  {
+    "targets": ["10.0.0.21:8000"],
+    "labels": {"service": "vllm", "environment": "production"}
+  }
+]
+```
+
+Prometheus 固定访问该目标的 `/metrics`。模型流量看板展示请求速率、输入/输出 Token、运行/等待队列、TTFT 和 E2E；`NextOffer / 调整意见耗时` 还会展示 queue、prefill、decode 和 TPOT，便于把应用耗时与模型服务器内部耗时对齐。
 
 ## 5. 配置分模型告警邮箱
 
