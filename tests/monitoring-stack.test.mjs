@@ -128,6 +128,74 @@ test('automatically provisions the Prometheus datasource and NextOffer dashboard
   assert.match(JSON.stringify(dashboard), /sum\(up\{job=\\"nextoffer\\"\}\)/);
 });
 
+test('visualizes NextOffer AI latency phases and their share of total time', async () => {
+  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer/nextoffer-overview.json'));
+  const serialized = JSON.stringify(dashboard);
+  const panelTitles = dashboard.panels.map(panel => panel.title);
+  const variableNames = dashboard.templating.list.map(variable => variable.name);
+
+  for (const variable of ['intent', 'provider', 'model', 'status']) {
+    assert.ok(variableNames.includes(variable));
+  }
+  for (const title of [
+    'AI 首 Token P95',
+    'AI 正文完成 P95',
+    'AI 快捷建议 P95',
+    'AI 总耗时 P95',
+    'AI 各阶段耗时趋势',
+    'AI 平均耗时占比',
+  ]) {
+    assert.ok(panelTitles.includes(title));
+  }
+  for (const phase of [
+    'first_token',
+    'answer_generation',
+    'answer_complete',
+    'suggestions_complete',
+    'conversation_total',
+  ]) {
+    assert.match(serialized, new RegExp(phase));
+  }
+  assert.match(serialized, /nextoffer_ai_phase_duration_seconds_bucket/);
+  assert.match(serialized, /nextoffer_ai_phase_duration_seconds_sum/);
+  assert.match(serialized, /nextoffer_ai_phase_duration_seconds_count/);
+  assert.match(serialized, /intent=~\\"\$intent\\"/);
+  assert.match(serialized, /provider=~\\"\$provider\\"/);
+  assert.match(serialized, /model=~\\"\$model\\"/);
+  assert.match(serialized, /status=~\\"\$status\\"/);
+});
+
+test('documents the NextOffer AI latency dashboard and phase semantics', async () => {
+  const readme = await read('README.md');
+
+  assert.match(readme, /nextoffer_ai_phase_duration_seconds/);
+  assert.match(readme, /first_token/);
+  assert.match(readme, /answer_generation/);
+  assert.match(readme, /answer_complete/);
+  assert.match(readme, /suggestions_complete/);
+  assert.match(readme, /conversation_total/);
+  assert.match(readme, /AI 平均耗时占比/);
+});
+
+test('accounts for browser network and scheduling time in the AI latency share panel', async () => {
+  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer/nextoffer-overview.json'));
+  const panel = dashboard.panels.find(candidate => candidate.title === 'AI 平均耗时占比');
+  const residual = panel.targets.find(target => target.refId === 'D');
+
+  assert.equal(residual.legendFormat, '网络/调度间隔');
+  assert.equal(residual.type, 'math');
+  assert.equal(residual.expression, '100 - $A - $B - $C');
+});
+
+test('keeps the AI latency share visible when a phase has no samples', async () => {
+  const dashboard = JSON.parse(await read('grafana/dashboards/nextoffer/nextoffer-overview.json'));
+  const panel = dashboard.panels.find(candidate => candidate.title === 'AI 平均耗时占比');
+
+  for (const target of panel.targets.filter(candidate => ['A', 'B', 'C'].includes(candidate.refId))) {
+    assert.match(target.expr, /or on\(\) vector\(0\)$/);
+  }
+});
+
 test('integrates Ollama monitoring and model-specific email alerts', async () => {
   const compose = await read('docker-compose.yml');
   const prometheus = await read('prometheus/prometheus.yml');

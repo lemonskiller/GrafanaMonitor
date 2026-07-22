@@ -73,6 +73,20 @@ AGENT_BIND_ADDRESS=10.0.0.11 docker compose --profile gpu up -d
 
 编辑 `prometheus/targets/nextoffer.json`，填入暴露 `/actuator/prometheus` 的私网管理端口。
 
+NextOffer 的 AI 对话耗时由 Timer `nextoffer_ai_phase_duration_seconds` 提供，使用 `intent`、`provider`、`model` 和 `status` 等低基数标签。`conversationId` 不进入 Prometheus 标签。
+
+| phase | 含义 | 占比口径 |
+| --- | --- | --- |
+| `first_token` | 主请求开始到首个 reasoning 或正文 Token | 非重叠阶段 |
+| `answer_generation` | 首 Token 到正文流完成 | 非重叠阶段 |
+| `answer_complete` | 主请求开始到正文流完成 | 累计指标，只用于正文 SLA |
+| `suggestions_complete` | 后台快捷建议请求耗时 | 非重叠阶段 |
+| `conversation_total` | 主请求开始到快捷建议完成；无建议时到正文完成 | 累计指标和占比分母 |
+
+`NextOffer / NextOffer 服务监控` 的 AI 区域提供首 Token、正文完成、快捷建议和总耗时 P95，以及分阶段趋势和分模型平均耗时。页面顶部可按 AI 意图、供应商、模型和成功/失败状态筛选。
+
+`AI 平均耗时占比` 使用三个非重叠阶段的平均耗时除以平均总耗时。三项合计未覆盖的部分主要是浏览器收到正文、发起后台建议以及两次请求之间的网络和调度间隔；比较不同模型时应保持相同筛选条件。
+
 ### 通用 Prometheus 指标端点
 
 编辑 `prometheus/targets/services.json`。每组目标可指定 `metrics_path` 和 `scheme`：

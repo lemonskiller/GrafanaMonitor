@@ -685,6 +685,96 @@
       ],
       "title": "最繁忙接口",
       "type": "table"
+    },
+    {
+      "id": 11,
+      "title": "AI 对话耗时",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 28},
+      "panels": []
+    },
+    {
+      "id": 12,
+      "title": "AI 首 Token P95",
+      "description": "从后端收到主对话请求到首个 reasoning 或正文 Token。",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 29},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(nextoffer_ai_phase_duration_seconds_bucket{application=\"nextoffer\",phase=\"first_token\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval]))) or on() vector(0)", "legendFormat": "P95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3}, {"color": "red", "value": 10}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}
+    },
+    {
+      "id": 13,
+      "title": "AI 正文完成 P95",
+      "description": "从主对话请求开始到正文流完成的累计耗时。",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 29},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(nextoffer_ai_phase_duration_seconds_bucket{application=\"nextoffer\",phase=\"answer_complete\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval]))) or on() vector(0)", "legendFormat": "P95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 30}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}
+    },
+    {
+      "id": 14,
+      "title": "AI 快捷建议 P95",
+      "description": "正文完成后，后台异步生成三条快捷建议的请求耗时。",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 29},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(nextoffer_ai_phase_duration_seconds_bucket{application=\"nextoffer\",phase=\"suggestions_complete\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval]))) or on() vector(0)", "legendFormat": "P95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 15}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}
+    },
+    {
+      "id": 15,
+      "title": "AI 总耗时 P95",
+      "description": "主对话请求开始到后台快捷建议完成；不生成建议时到正文完成。",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 29},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(nextoffer_ai_phase_duration_seconds_bucket{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval]))) or on() vector(0)", "legendFormat": "P95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 15}, {"color": "red", "value": 45}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}
+    },
+    {
+      "id": 16,
+      "title": "AI 各阶段耗时趋势",
+      "description": "P95 趋势。answer_complete 和 conversation_total 是累计指标，其余阶段可用于拆分。",
+      "type": "timeseries",
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 34},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, phase) (rate(nextoffer_ai_phase_duration_seconds_bucket{application=\"nextoffer\",phase=~\"first_token|answer_generation|answer_complete|suggestions_complete|conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])))", "legendFormat": "{{phase}} P95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}}}, "overrides": []},
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 17,
+      "title": "AI 平均耗时占比",
+      "description": "非重叠阶段的平均耗时 / 平均总耗时。三项之和未覆盖的部分是正文结束到建议请求之间的浏览器、网络与调度间隔。",
+      "type": "bargauge",
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 34},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [
+        {"expr": "100 * (sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"first_token\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"first_token\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001)) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001), 0.000000001) or on() vector(0)", "legendFormat": "首 Token", "refId": "A"},
+        {"expr": "100 * (sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"answer_generation\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"answer_generation\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001)) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001), 0.000000001) or on() vector(0)", "legendFormat": "正文生成", "refId": "B"},
+        {"expr": "100 * (sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"suggestions_complete\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"suggestions_complete\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001)) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum(rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=\"conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001), 0.000000001) or on() vector(0)", "legendFormat": "快捷建议", "refId": "C"},
+        {"datasource": {"type": "__expr__", "uid": "__expr__"}, "expression": "100 - $A - $B - $C", "legendFormat": "网络/调度间隔", "refId": "D", "type": "math"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "color": {"mode": "continuous-GrYlRd"}}, "overrides": []},
+      "options": {"displayMode": "gradient", "minVizHeight": 16, "minVizWidth": 0, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true, "sizing": "auto"}
+    },
+    {
+      "id": 18,
+      "title": "AI 分模型平均阶段耗时",
+      "description": "按供应商、模型和阶段显示平均耗时，便于定位百炼、Ollama 与 vLLM 的差异。",
+      "type": "timeseries",
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 43},
+      "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+      "targets": [{"expr": "sum by (provider, model, phase) (rate(nextoffer_ai_phase_duration_seconds_sum{application=\"nextoffer\",phase=~\"first_token|answer_generation|suggestions_complete|conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])) / clamp_min(sum by (provider, model, phase) (rate(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",phase=~\"first_token|answer_generation|suggestions_complete|conversation_total\",intent=~\"$intent\",provider=~\"$provider\",model=~\"$model\",status=~\"$status\"}[$__rate_interval])), 0.000000001)", "legendFormat": "{{provider}} / {{model}} / {{phase}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0, "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 8, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}}}, "overrides": []},
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}}
     }
   ],
   "refresh": "10s",
@@ -694,7 +784,64 @@
     "spring-boot"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "intent",
+        "label": "AI 意图",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+        "query": {"query": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\"}, intent)", "refId": "PrometheusVariableQueryEditor-VariableQuery"},
+        "definition": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\"}, intent)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "options": []
+      },
+      {
+        "name": "provider",
+        "label": "AI 供应商",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+        "query": {"query": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",intent=~\"$intent\"}, provider)", "refId": "PrometheusVariableQueryEditor-VariableQuery"},
+        "definition": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",intent=~\"$intent\"}, provider)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "options": []
+      },
+      {
+        "name": "model",
+        "label": "AI 模型",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+        "query": {"query": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",intent=~\"$intent\",provider=~\"$provider\"}, model)", "refId": "PrometheusVariableQueryEditor-VariableQuery"},
+        "definition": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\",intent=~\"$intent\",provider=~\"$provider\"}, model)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "options": []
+      },
+      {
+        "name": "status",
+        "label": "AI 状态",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-nextoffer"},
+        "query": {"query": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\"}, status)", "refId": "PrometheusVariableQueryEditor-VariableQuery"},
+        "definition": "label_values(nextoffer_ai_phase_duration_seconds_count{application=\"nextoffer\"}, status)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "options": []
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -704,6 +851,6 @@
   "timezone": "browser",
   "title": "NextOffer 服务监控",
   "uid": "nextoffer-service-overview",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
